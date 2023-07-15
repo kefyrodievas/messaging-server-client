@@ -14,7 +14,7 @@
 
 void *receive(void *socket_fd);
 
-int main(int argc, char const* argv[]) {
+int main(int argc, char const *argv[ ]) {
     // Creating a socket
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -23,32 +23,32 @@ int main(int argc, char const* argv[]) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
-    
+
     struct sockaddr_in address;
 
     address.sin_family = AF_INET;
     address.sin_port = htons(PORT);
-  
+
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, ADDR, &address.sin_addr) <= 0) {
         // printf( "\nInvalid address/ Address not supported \n");
         perror("Invalid address");
         exit(EXIT_FAILURE);
     }
-  
+
     // Connecting to server
     int status;
-    status = connect(socket_fd, (struct sockaddr*)&address, sizeof(address));
+    status = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
     if (status < 0) {
         // printf("\nConnection Failed \n");
         perror("Connection Failed");
         exit(EXIT_FAILURE);
     }
 
-    char *buffer = malloc(BUFF_SIZE * sizeof(char));
+    // char *buffer = malloc(BUFF_SIZE * sizeof(char));
 
     pthread_t receive_thread;
-    pthread_create(&receive_thread, NULL, receive, (void*)&socket_fd);
+    pthread_create(&receive_thread, NULL, receive, (void *)&socket_fd);
 
     char buffer[BUFF_SIZE];
 
@@ -71,7 +71,7 @@ int main(int argc, char const* argv[]) {
 }
 
 void *receive(void *socket) {
-    int socket_fd = *(int*)socket;
+    int socket_fd = *(int *)socket;
     char buffer[BUFF_SIZE];
     memset(buffer, 0, BUFF_SIZE);
     // int bytes;
