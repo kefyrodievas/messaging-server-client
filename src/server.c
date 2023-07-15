@@ -9,6 +9,7 @@
 
 #include "str.h"
 
+#define BUFF_SIZE 4096
 #define PORT 8080
 #define MAX_CLIENTS 30
 
@@ -53,19 +54,27 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < MAX_CLIENTS; i++) {
         client[i].socket = 0;
+        client[i].name = "";
+        client[i].address = "";
     }
 
-    int addrlen = sizeof(address);
+    socklen_t addrlen = sizeof(address);
 
-    char *buffer = malloc(4096 * sizeof(char));
+    char *buffer = (char*)malloc(BUFF_SIZE * sizeof(char));
+    // memset(buffer, 0, sizeof(buffer));
+
+    // char buffer[BUFF_SIZE];
 
     char *hello = "Hello from server";
-
+    // char * a = malloc(1);
+    // a[2] = 'a';
     int max_socket;
     fd_set readfds;
 
     while (1) {
-        memset(buffer, 0, sizeof(buffer));
+        // memset(buffer, 0, BUFF_SIZE * sizeof(char));
+        // buffer[0] = '\0';
+        buffer = "";
         FD_ZERO(&readfds);
         FD_SET(master_socket, &readfds);
         max_socket = master_socket;
@@ -97,8 +106,7 @@ int main(int argc, char **argv) {
         for (int i = 0; i < MAX_CLIENTS; i++) {
             int socket = client[i].socket;
             if (!FD_ISSET(socket, &readfds)) { continue; }
-
-            int read_value = recv(socket, buffer, sizeof(buffer), 0);
+            int read_value = recv(socket, buffer, BUFF_SIZE, 0);
             printf("%s\n", buffer);
             if (read_value < 0) {
                 perror("Receive failed");
@@ -106,17 +114,17 @@ int main(int argc, char **argv) {
             }
 
             // When client disconnects
-            if (read_value == 0) {
+            else if (read_value == 0) {
+                buffer[read_value] = '\0';
+                close(socket);
                 for (int j = 0; j < MAX_CLIENTS; j++) {
                     if (socket == client[j].socket) continue;
                     if (client[j].socket == 0) continue;
-                    buffer = "Disconnected";
-                    send(client[j].socket, buffer, 13, 0);
+                    send(client[j].socket, "Disconnected", 13, 0);
                 }
-                close(socket);
+                
                 client[i].socket = 0;
                 client[i].address = NULL;
-                printf("asdasddasdasdasdsad\n\n");
             }
             // else if (std::string(buf).substr(0, 6) == "<name=") { // reads the username that is sent upon starting the client
             //     client[i].name = std::string(buf).substr(6, std::string(buf).find(">"));
@@ -131,14 +139,15 @@ int main(int argc, char **argv) {
             //     }
             // }
             
-            // else {
-            //     for (int j = 0; j < MAX_CLIENTS; j++) {
-            //         if (socket == client[j].socket) continue;
-            //         if (client[j].socket == 0) continue;
-            //         // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
-            //         send(client[j].socket, buffer, strlen(buffer), 0);
-            //     }
-            // }
+            else {
+                buffer[read_value] = '\0';
+                for (int j = 0; j < MAX_CLIENTS; j++) {
+                    if (socket == client[j].socket) continue;
+                    if (client[j].socket == 0) continue;
+                    // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
+                    send(client[j].socket, buffer, strlen(buffer), 0);
+                }
+            }
         }
     }
     

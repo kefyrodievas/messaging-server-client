@@ -8,6 +8,7 @@
 
 #include "str.h"
 
+#define BUFF_SIZE 4096
 #define PORT 8080
 #define ADDR "127.0.0.1"
 
@@ -19,8 +20,8 @@ int main(int argc, char const* argv[]) {
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         // printf("\n Socket creation error \n");
-        perror("Socket creation failed\n");
-        return -1;
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
     }
     
     struct sockaddr_in address;
@@ -31,8 +32,8 @@ int main(int argc, char const* argv[]) {
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, ADDR, &address.sin_addr) <= 0) {
         // printf( "\nInvalid address/ Address not supported \n");
-        perror("Invalid address\n");
-        return -1;
+        perror("Invalid address");
+        exit(EXIT_FAILURE);
     }
   
     // Connecting to server
@@ -40,22 +41,29 @@ int main(int argc, char const* argv[]) {
     status = connect(socket_fd, (struct sockaddr*)&address, sizeof(address));
     if (status < 0) {
         // printf("\nConnection Failed \n");
-        perror("Connection Failed\n");
-        return -1;
+        perror("Connection Failed");
+        exit(EXIT_FAILURE);
     }
 
-    char buffer[4096];
+    char *buffer = malloc(BUFF_SIZE * sizeof(char));
 
     pthread_t receive_thread;
     pthread_create(&receive_thread, NULL, receive, (void*)&socket_fd);
-    pthread_join(receive_thread, NULL);
-    
+
+    char buffer[BUFF_SIZE];
+
     while (1) {
-        memset(buffer, 0, 4096);
+        // memset(buffer, 0, 4096);
         scanf("%s", buffer);
         // fgets(buffer, sizeof(buffer), STDIN_FILENO);
-        send(socket_fd, buffer, strlen(buffer), 0);
+        // write(socket_fd, buffer, strlen(buffer));
+        int ret = send(socket_fd, buffer, BUFF_SIZE, 0);
+        if (ret < 0) {
+            perror("Failed to send");
+        }
     }
+
+    pthread_join(receive_thread, NULL);
 
     // Close the connected socket
     close(socket_fd);
@@ -64,14 +72,14 @@ int main(int argc, char const* argv[]) {
 
 void *receive(void *socket) {
     int socket_fd = *(int*)socket;
-    char buffer[4096];
-    memset(buffer, 0, 4096);
+    char buffer[BUFF_SIZE];
+    memset(buffer, 0, BUFF_SIZE);
     // int bytes;
     // bytes = read(socket_fd, buffer, sizeof(buffer));
     // printf("%s\n", buffer);
 
     while (1) {
-        int bytesRecv = recv(socket_fd, buffer, 4096, 0);
+        int bytesRecv = recv(socket_fd, buffer, BUFF_SIZE, 0);
 
         if (bytesRecv < 0) {
             perror("Connection issue");
