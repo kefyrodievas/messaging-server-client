@@ -7,12 +7,10 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+#include "str.h"
+
 #define PORT 8080
 #define MAX_CLIENTS 30
-
-char *join(const char *str1, const char *str2);
-char *substr(char *string, int start, int count);
-int find(char *string, char character);
 
 typedef struct {
     int socket;
@@ -23,7 +21,6 @@ typedef struct {
 
 int main(int argc, char **argv) {
     int master_socket = socket(AF_INET, SOCK_STREAM, 0);
-
     // Creating socket file descriptor
     if (master_socket < 0) {
         perror("Socket creation failed\n");
@@ -60,7 +57,7 @@ int main(int argc, char **argv) {
 
     int addrlen = sizeof(address);
 
-    char buffer[4096];
+    char *buffer = malloc(4096 * sizeof(char));
 
     char *hello = "Hello from server";
 
@@ -80,9 +77,9 @@ int main(int argc, char **argv) {
         select(max_socket + 1, &readfds, NULL, NULL, NULL);
 
         if (FD_ISSET(master_socket, &readfds)) {
-            int socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)addrlen);
+            int socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
             if (socket < 0) {
-                perror("Connection issue\n");
+                perror("Accept failed");
                 continue;
             }
             printf("New connection, socket: %d IP: %s\n", socket, inet_ntoa(address.sin_addr));
@@ -102,25 +99,24 @@ int main(int argc, char **argv) {
             if (!FD_ISSET(socket, &readfds)) { continue; }
 
             int read_value = recv(socket, buffer, sizeof(buffer), 0);
-
+            printf("%s\n", buffer);
             if (read_value < 0) {
-                perror("Connection issue\n");
+                perror("Receive failed");
                 continue;
             }
 
+            // When client disconnects
             if (read_value == 0) {
+                for (int j = 0; j < MAX_CLIENTS; j++) {
+                    if (socket == client[j].socket) continue;
+                    if (client[j].socket == 0) continue;
+                    buffer = "Disconnected";
+                    send(client[j].socket, buffer, 13, 0);
+                }
                 close(socket);
-
-                buffer[read_value] = '\0';
-                // for (int j = 0; j < MAX_CLIENTS; j++) {
-                //     if (sock_desc == client[j].socket) continue;
-                //     if (client[j].socket == 0) continue;
-                //     buf = join((client[i].name + " -> ").c_str(), "Disconnected");
-                //     send(client[j].socket, buf, strlen(buf), 0);
-                // }
-
                 client[i].socket = 0;
-                client[i].name = "";
+                client[i].address = NULL;
+                printf("asdasddasdasdasdsad\n\n");
             }
             // else if (std::string(buf).substr(0, 6) == "<name=") { // reads the username that is sent upon starting the client
             //     client[i].name = std::string(buf).substr(6, std::string(buf).find(">"));
@@ -134,42 +130,20 @@ int main(int argc, char **argv) {
             //         send(client[j].socket, buf, strlen(buf), 0);
             //     }
             // }
-            else {
-                // buffer[read_value] = '\0';
-                for (int j = 0; j < MAX_CLIENTS; j++) {
-                    // if (socket == client[j].socket) continue;
-                    if (client[j].socket == 0) continue;
-                    // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
-                    send(client[j].socket, buffer, strlen(buffer), 0);
-                }
-            }
+            
+            // else {
+            //     for (int j = 0; j < MAX_CLIENTS; j++) {
+            //         if (socket == client[j].socket) continue;
+            //         if (client[j].socket == 0) continue;
+            //         // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
+            //         send(client[j].socket, buffer, strlen(buffer), 0);
+            //     }
+            // }
         }
     }
+    
 
     // closing the listening socket
     shutdown(master_socket, SHUT_RDWR);
     return 0;
-}
-
-char *join(const char *str1, const char *str2) {
-    char *ret = malloc(strlen(str1) + strlen(str2));
-    strcpy(ret, str1);
-    strcat(ret, str2);
-    return ret;
-}
-
-char *substr(char *str, int start, int end) {
-    int length = end - start;
-    char *ret = malloc(length * sizeof(char));
-    for (int i = 0; i < length; i++) {
-        ret[i] = str[i + start];
-    }
-    return ret;
-}
-
-int find(char *str, char character) {
-    for (int i = 0; i < strlen(str); i++) {
-        if (character == str[i]) return i;
-    }
-    return -1;
 }

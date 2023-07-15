@@ -15,7 +15,7 @@ file(GLOB_RECURSE SERVER ${PROJECT_SOURCE_DIR}/src/server.c)
 add_executable(Server ${SERVER})
 
 file(GLOB_RECURSE CLIENT ${PROJECT_SOURCE_DIR}/src/client.c)
-add_executable(Client ${SERVER})
+add_executable(Client ${CLIENT})
 
 add_custom_target( server )
 add_dependencies(server Server)
