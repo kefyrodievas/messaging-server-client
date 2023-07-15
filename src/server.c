@@ -74,12 +74,8 @@ int main(int argc, char **argv) {
         max_socket = master_socket;
         for (int i = 0; i < MAX_CLIENTS; i++) {
             int socket = client[i].socket;
-            if (socket > 0) {
-                FD_SET(socket, &readfds);
-            }
-            if (socket > max_socket) {
-                max_socket = socket;
-            }
+            if (socket > 0) { FD_SET(socket, &readfds); }
+            if (socket > max_socket) { max_socket = socket; }
         }
         select(max_socket + 1, &readfds, NULL, NULL, NULL);
 
@@ -103,48 +99,48 @@ int main(int argc, char **argv) {
 
         for (int i = 0; i < MAX_CLIENTS; i++) {
             int socket = client[i].socket;
-            if (FD_ISSET(socket, &readfds)) {
-                int read_value = recv(socket, buffer, sizeof(buffer), 0);
+            if (!FD_ISSET(socket, &readfds)) { continue; }
 
-                if (read_value < 0) {
-                    perror("Connection issue\n");
-                    continue;
-                }
+            int read_value = recv(socket, buffer, sizeof(buffer), 0);
 
-                if (read_value == 0) {
-                    close(socket);
+            if (read_value < 0) {
+                perror("Connection issue\n");
+                continue;
+            }
 
-                    buffer[read_value] = '\0';
-                    // for (int j = 0; j < MAX_CLIENTS; j++) {
-                    //     if (sock_desc == client[j].socket) continue;
-                    //     if (client[j].socket == 0) continue;
-                    //     buf = join((client[i].name + " -> ").c_str(), "Disconnected");
-                    //     send(client[j].socket, buf, strlen(buf), 0);
-                    // }
+            if (read_value == 0) {
+                close(socket);
 
-                    client[i].socket = 0;
-                    client[i].name = "";
-                }
-                // else if (std::string(buf).substr(0, 6) == "<name=") { // reads the username that is sent upon starting the client
-                //     client[i].name = std::string(buf).substr(6, std::string(buf).find(">"));
-                //     client[i].name.erase(client[i].name.find(">"));
-
-                //     buf[read_value] = '\0';
-                //     for (int j = 0; j < MAX_CLIENTS; j++) {
-                //         if (socket == client[j].socket) continue;
-                //         if (client[j].socket == 0) continue;
-                //         buf = join((client[i].name + " -> ").c_str(), "Connected");
-                //         send(client[j].socket, buf, strlen(buf), 0);
-                //     }
+                buffer[read_value] = '\0';
+                // for (int j = 0; j < MAX_CLIENTS; j++) {
+                //     if (sock_desc == client[j].socket) continue;
+                //     if (client[j].socket == 0) continue;
+                //     buf = join((client[i].name + " -> ").c_str(), "Disconnected");
+                //     send(client[j].socket, buf, strlen(buf), 0);
                 // }
-                else {
-                    // buffer[read_value] = '\0';
-                    for (int j = 0; j < MAX_CLIENTS; j++) {
-                        // if (socket == client[j].socket) continue;
-                        if (client[j].socket == 0) continue;
-                        // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
-                        send(client[j].socket, buffer, strlen(buffer), 0);
-                    }
+
+                client[i].socket = 0;
+                client[i].name = "";
+            }
+            // else if (std::string(buf).substr(0, 6) == "<name=") { // reads the username that is sent upon starting the client
+            //     client[i].name = std::string(buf).substr(6, std::string(buf).find(">"));
+            //     client[i].name.erase(client[i].name.find(">"));
+
+            //     buf[read_value] = '\0';
+            //     for (int j = 0; j < MAX_CLIENTS; j++) {
+            //         if (socket == client[j].socket) continue;
+            //         if (client[j].socket == 0) continue;
+            //         buf = join((client[i].name + " -> ").c_str(), "Connected");
+            //         send(client[j].socket, buf, strlen(buf), 0);
+            //     }
+            // }
+            else {
+                // buffer[read_value] = '\0';
+                for (int j = 0; j < MAX_CLIENTS; j++) {
+                    // if (socket == client[j].socket) continue;
+                    if (client[j].socket == 0) continue;
+                    // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
+                    send(client[j].socket, buffer, strlen(buffer), 0);
                 }
             }
         }
