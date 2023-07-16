@@ -15,6 +15,10 @@
 void *receive(void *socket_fd);
 
 int main(int argc, char const *argv[ ]) {
+    char *ip_address;
+    if (argc > 1)ip_address = argv[1];
+    else ip_address = "127.0.0.1";
+
     // Creating a socket
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -30,7 +34,7 @@ int main(int argc, char const *argv[ ]) {
     address.sin_port = htons(PORT);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, ADDR, &address.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, ip_address, &address.sin_addr) <= 0) {
         // printf( "\nInvalid address/ Address not supported \n");
         perror("Invalid address");
         exit(EXIT_FAILURE);
@@ -45,19 +49,26 @@ int main(int argc, char const *argv[ ]) {
         exit(EXIT_FAILURE);
     }
 
-    // char *buffer = malloc(BUFF_SIZE * sizeof(char));
+    char *hello = "Helloo";
+
+    int ret = send(socket_fd, hello, strlen(hello), 0);
+    if (ret < 0) {
+        perror("Failed to send");
+    }
+
+    char *buffer = malloc(BUFF_SIZE * sizeof(char));
 
     pthread_t receive_thread;
     pthread_create(&receive_thread, NULL, receive, (void *)&socket_fd);
 
-    char buffer[BUFF_SIZE];
+    // char buffer[BUFF_SIZE];
 
     while (1) {
         // memset(buffer, 0, 4096);
         scanf("%s", buffer);
         // fgets(buffer, sizeof(buffer), STDIN_FILENO);
         // write(socket_fd, buffer, strlen(buffer));
-        int ret = send(socket_fd, buffer, BUFF_SIZE, 0);
+        int ret = send(socket_fd, buffer, strlen(buffer), 0);
         if (ret < 0) {
             perror("Failed to send");
         }
@@ -73,12 +84,13 @@ int main(int argc, char const *argv[ ]) {
 void *receive(void *socket) {
     int socket_fd = *(int *)socket;
     char buffer[BUFF_SIZE];
-    memset(buffer, 0, BUFF_SIZE);
+
     // int bytes;
     // bytes = read(socket_fd, buffer, sizeof(buffer));
     // printf("%s\n", buffer);
 
     while (1) {
+        memset(buffer, 0, BUFF_SIZE);
         int bytesRecv = recv(socket_fd, buffer, BUFF_SIZE, 0);
 
         if (bytesRecv < 0) {

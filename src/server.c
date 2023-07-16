@@ -14,12 +14,15 @@
 #define PORT 8080
 #define MAX_CLIENTS 30
 
+void poll_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size);
+void poll_del(struct pollfd poll_list[ ], int i, int *fd_count);
+// int get_listener(void);
+
 typedef struct {
     int socket;
     char *name;
     char *address;
 } user;
-
 
 int main(int argc, char **argv) {
     int master_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,7 +38,6 @@ int main(int argc, char **argv) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
-    user client[MAX_CLIENTS];
     struct sockaddr_in address;
 
     address.sin_family = AF_INET;
@@ -54,11 +56,14 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    user client[MAX_CLIENTS];
     for (int i = 0; i < MAX_CLIENTS; i++) {
         client[i].socket = 0;
         client[i].name = "";
         client[i].address = "";
     }
+
+    // int listener = get_listener( );
 
     socklen_t addrlen = sizeof(address);
 
@@ -79,11 +84,15 @@ int main(int argc, char **argv) {
     fd_count++;
 
     while (1) {
-        int poll_count = poll(poll_list, 1, -1);
+        int events = poll(poll_list, fd_count, 5000);
 
-        if (poll_count < 0) {
+        if (events < 0) {
             perror("Poll failed");
             exit(EXIT_FAILURE);
+        }
+
+        if (events == 0) {
+            printf("Poll timed out!\n");
         }
 
         for (int i = 0; i < fd_count; i++) {
@@ -110,11 +119,7 @@ int main(int argc, char **argv) {
                         }
                     }
 
-                    poll_list[fd_count].fd = socket;
-                    poll_list[fd_count].events = POLLIN; // Check ready-to-read
-
-                    fd_count++;
-                    // add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
+                    poll_add(&poll_list, socket, &fd_count, &fd_size);
 
                     // printf("pollserver: new connection from %s on " "socket %d\n",
                     //     inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
@@ -128,18 +133,19 @@ int main(int argc, char **argv) {
                     int sender_fd = poll_list[i].fd;
 
                     printf("%s\n", buffer);
-                    if (nbytes < 0) {
-
-                    }
 
                     if (nbytes <= 0) {
                         // When client disconnects
                         if (nbytes == 0) {
                             // buffer[nbytes] = '\0';
-                            for (int j = 0; j < MAX_CLIENTS; j++) {
-                                if (socket == client[j].socket) continue;
-                                if (client[j].socket == 0) continue;
-                                send(client[j].socket, "Disconnected", 13, 0);
+
+                            for (int j = 0; j < fd_count; j++) {
+                                int dest_fd = poll_list[j].fd;
+                                if (dest_fd != master_socket && dest_fd != sender_fd) {
+                                    if (send(dest_fd, "Disconnected", 13, 0) < 0) {
+                                        perror("Failed to send");
+                                    }
+                                }
                             }
 
                             client[i].socket = 0;
@@ -150,27 +156,16 @@ int main(int argc, char **argv) {
                         }
 
                         close(poll_list[i].fd);
-
-                        poll_list[i] = poll_list[fd_count - 1];
-
-                        fd_count--;
+                        poll_del(poll_list, i, &fd_count);
                     }
                     else {
-                        // We got some good data from a client
-
                         for (int j = 0; j < fd_count; j++) {
-                            // buffer[read_value] = '\0';
-                            // if (socket == poll_list[j].fd) continue;
-                            // if (poll_list[j].fd == 0) continue;
-                            // // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
-                            // send(client[j].socket, buffer, strlen(buffer), 0);
-
                             // Send to everyone!
                             int dest_fd = poll_list[j].fd;
 
                             // Except the listener and ourselves
                             if (dest_fd != master_socket && dest_fd != sender_fd) {
-                                if (send(dest_fd, buffer, nbytes, 0) == -1) {
+                                if (send(dest_fd, buffer, nbytes, 0) < 0) {
                                     perror("Failed to send");
                                 }
                             }
@@ -181,98 +176,29 @@ int main(int argc, char **argv) {
         }
     }
 
-
-
-
-
-
-    // int max_socket;
-    // fd_set readfds;
-
-
-    // while (1) {
-    //     memset(buffer, 0, BUFF_SIZE);
-    //     // buffer[0] = '\0';
-    //     // buffer = "";
-    //     FD_ZERO(&readfds);
-    //     FD_SET(master_socket, &readfds);
-    //     max_socket = master_socket;
-    //     for (int i = 0; i < MAX_CLIENTS; i++) {
-    //         int socket = client[i].socket;
-    //         if (socket > 0) { FD_SET(socket, &readfds); }
-    //         if (socket > max_socket) { max_socket = socket; }
-    //     }
-
-    //     select(max_socket + 1, &readfds, NULL, NULL, NULL);
-
-    //     if (FD_ISSET(master_socket, &readfds)) {
-    //         int socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-    //         if (socket < 0) {
-    //             perror("Accept failed");
-    //             continue;
-    //         }
-    //         printf("New connection, socket: %d IP: %s\n", socket, inet_ntoa(address.sin_addr));
-    //         send(socket, hello, strlen(hello), 0);
-
-    //         for (int i = 0; i < MAX_CLIENTS; i++) {
-    //             if (client[i].socket == 0) {
-    //                 client[i].socket = socket;
-    //                 client[i].address = inet_ntoa(address.sin_addr);
-    //                 break;
-    //             }
-    //         }
-    //     }
-
-    //     for (int i = 0; i < MAX_CLIENTS; i++) {
-    //         int socket = client[i].socket;
-    //         if (!FD_ISSET(socket, &readfds)) { continue; }
-    //         int read_value = recv(socket, buffer, BUFF_SIZE, 0);
-    //         printf("%s\n", buffer);
-    //         if (read_value < 0) {
-    //             perror("Receive failed");
-    //             continue;
-    //         }
-
-    //         // When client disconnects
-    //         else if (read_value == 0) {
-    //             buffer[read_value] = '\0';
-    //             close(socket);
-    //             for (int j = 0; j < MAX_CLIENTS; j++) {
-    //                 if (socket == client[j].socket) continue;
-    //                 if (client[j].socket == 0) continue;
-    //                 send(client[j].socket, "Disconnected", 13, 0);
-    //             }
-
-    //             client[i].socket = 0;
-    //             client[i].address = NULL;
-    //         }
-    //         // else if (std::string(buf).substr(0, 6) == "<name=") { // reads the username that is sent upon starting the client
-    //         //     client[i].name = std::string(buf).substr(6, std::string(buf).find(">"));
-    //         //     client[i].name.erase(client[i].name.find(">"));
-
-    //         //     buf[read_value] = '\0';
-    //         //     for (int j = 0; j < MAX_CLIENTS; j++) {
-    //         //         if (socket == client[j].socket) continue;
-    //         //         if (client[j].socket == 0) continue;
-    //         //         buf = join((client[i].name + " -> ").c_str(), "Connected");
-    //         //         send(client[j].socket, buf, strlen(buf), 0);
-    //         //     }
-    //         // }
-
-    //         else {
-    //             buffer[read_value] = '\0';
-    //             for (int j = 0; j < MAX_CLIENTS; j++) {
-    //                 if (socket == client[j].socket) continue;
-    //                 if (client[j].socket == 0) continue;
-    //                 // buf = join((client[i].name + ": ").c_str(), (const char*)buf);
-    //                 send(client[j].socket, buffer, strlen(buffer), 0);
-    //             }
-    //         }
-    //     }
-    // }
-
-
     // closing the listening socket
     shutdown(master_socket, SHUT_RDWR);
     return 0;
+}
+
+void poll_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size) {
+    // If we don't have room, add more space in the pfds array
+    if (*fd_count == *fd_size) {
+        *fd_size *= 2; // Double it
+
+        *poll_list = realloc(*poll_list, sizeof(**poll_list) * (*fd_size));
+    }
+
+    (*poll_list)[*fd_count].fd = newfd;
+    (*poll_list)[*fd_count].events = POLLIN; // Check ready-to-read
+
+    (*fd_count)++;
+}
+
+// Remove an index from the set
+void poll_del(struct pollfd poll_list[ ], int i, int *fd_count) {
+    // Copy the one from the end over this one
+    poll_list[i] = poll_list[*fd_count - 1];
+
+    (*fd_count)--;
 }
