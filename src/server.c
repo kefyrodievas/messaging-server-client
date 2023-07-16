@@ -25,16 +25,16 @@ typedef struct {
 } user;
 
 int main(int argc, char **argv) {
-    int master_socket = socket(AF_INET, SOCK_STREAM, 0);
+    int listener = socket(AF_INET, SOCK_STREAM, 0);
     // Creating socket file descriptor
-    if (master_socket < 0) {
+    if (listener < 0) {
         perror("Socket creation failed\n");
         exit(EXIT_FAILURE);
     }
 
     // Forcefully attaching socket to the port 8080
     int opt = 1;
-    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -45,13 +45,13 @@ int main(int argc, char **argv) {
     address.sin_port = htons(PORT);
 
     // Forcefully attaching socket to the port 8080
-    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    if (bind(listener, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
     // freeaddrinfo(address);
 
-    if (listen(master_socket, MAX_CLIENTS) < 0) {
+    if (listen(listener, MAX_CLIENTS) < 0) {
         perror("Listening failed");
         exit(EXIT_FAILURE);
     }
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     // struct pollfd *poll_list;
     struct pollfd *poll_list = malloc(sizeof(*poll_list) * fd_size);
 
-    poll_list[0].fd = master_socket;
+    poll_list[0].fd = listener;
     poll_list[0].events = POLLIN;
     fd_count++;
 
@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
             // Check if someone's ready to read
             if (poll_list[i].revents & POLLIN) { // We got one!!
 
-                if (poll_list[i].fd == master_socket) {
+                if (poll_list[i].fd == listener) {
                     // If listener is ready to read, handle new connection
 
-                    int socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+                    int socket = accept(listener, (struct sockaddr *)&address, (socklen_t *)&addrlen);
                     if (socket < 0) {
                         perror("Accept failed");
                         continue;
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
                             for (int j = 0; j < fd_count; j++) {
                                 int dest_fd = poll_list[j].fd;
-                                if (dest_fd != master_socket && dest_fd != sender_fd) {
+                                if (dest_fd != listener && dest_fd != sender_fd) {
                                     if (send(dest_fd, "Disconnected", 13, 0) < 0) {
                                         perror("Failed to send");
                                     }
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
                             int dest_fd = poll_list[j].fd;
 
                             // Except the listener and ourselves
-                            if (dest_fd != master_socket && dest_fd != sender_fd) {
+                            if (dest_fd != listener && dest_fd != sender_fd) {
                                 if (send(dest_fd, buffer, nbytes, 0) < 0) {
                                     perror("Failed to send");
                                 }
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
     }
 
     // closing the listening socket
-    shutdown(master_socket, SHUT_RDWR);
+    shutdown(listener, SHUT_RDWR);
     return 0;
 }
 
