@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     fd_count++;
 
     while (1) {
-        int events = poll(poll_list, fd_count, 5000);
+        int events = poll(poll_list, fd_count, -1);
 
         if (events < 0) {
             perror("Poll failed");
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
                 }
                 else {
                     // If not the listener, we're just a regular client
-                    int nbytes = recv(poll_list[i].fd, buffer, BUFF_SIZE, 0);
+                    ssize_t nbytes = recv(poll_list[i].fd, buffer, BUFF_SIZE, 0);
 
                     int sender_fd = poll_list[i].fd;
 
@@ -137,8 +137,6 @@ int main(int argc, char **argv) {
                     if (nbytes <= 0) {
                         // When client disconnects
                         if (nbytes == 0) {
-                            // buffer[nbytes] = '\0';
-
                             for (int j = 0; j < fd_count; j++) {
                                 int dest_fd = poll_list[j].fd;
                                 if (dest_fd != listener && dest_fd != sender_fd) {

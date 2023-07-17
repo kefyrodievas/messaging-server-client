@@ -1,34 +1,28 @@
 #include <stdio.h>
-#include <poll.h>
+// #include <poll.h>
+#include "src/str.h"
+#include <sys/time.h>
 
-int main(void)
-{
-    struct pollfd pfds[1]; // More if you want to monitor more
+int main(void) {
+    char *str = "Example test string";
 
-    pfds[0].fd = 0;          // Standard input
-    pfds[0].events = POLLIN; // Tell me when ready to read
+    // struct timeval stop, start;
+    // gettimeofday(&start, NULL);
+    // for (int i = 0; i < 1000 * 1000; i++) {
+    //     replace(str, 8, 4, "hello");
+    // }
+    // gettimeofday(&stop, NULL);
+    // printf("took %lu us\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
 
-    // If you needed to monitor other things, as well:
-    //pfds[1].fd = some_socket; // Some socket descriptor
-    //pfds[1].events = POLLIN;  // Tell me when ready to read
+    printf("%s\n", str);
 
-    printf("Hit RETURN or wait 2.5 seconds for timeout\n");
+    printf("Sub: %s\n", substr(str, 8, 4));
+    printf("-Sub: %s\n", substr(str, 12, -4));
 
-    int num_events = poll(pfds, 1, 2500); // 2.5 second timeout
+    printf("1c: %d\n", findf(str, 't'));
+    printf("lc: %d\n", findl(str, 't'));
 
-    if (num_events == 0) {
-        printf("Poll timed out!\n");
-    }
-    else {
-        int pollin_happened = pfds[0].revents & POLLIN;
-
-        if (pollin_happened) {
-            printf("File descriptor %d is ready to read\n", pfds[0].fd);
-        }
-        else {
-            printf("Unexpected event occurred: %d\n", pfds[0].revents);
-        }
-    }
+    printf("Rep: %s\n", replace(str, 8, 4, "hello"));
 
     return 0;
 }

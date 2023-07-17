@@ -3,56 +3,46 @@
 
 #include <stdlib.h>
 #include <string.h>
+// #include <assert.h>
 
-// char *join(const char *str1, const char *str2);
-// char *substr(char *string, int start, int count);
-// int find(char *string, char character);
-// char *replace(char *str1, int start, int end, char *str2);
-
-
-
-// // Joins 2 character strings together
-// char *join(const char *str1, const char *str2)
-// {
-//     char *ret = (char*)malloc(strlen(str1) + strlen(str2));
-//     strcpy(ret, str1);
-//     strcat(ret, str2);
-//     return ret;
-// }
-
-// Gets a portion of a string
-char *substr(char *str, int start, int end)
-{
-    int length = end - start;
-    char *ret = (char*)malloc(length * sizeof(char));
-    for (int i = 0; i < length; i++)
-    {
-        ret[i] = str[i + start];
+// Gets a portion of a string from pos with length of len
+char *substr(const char *str, size_t pos, ssize_t len) {
+    if (len == 0) { return NULL; }
+    if (len < 0) {
+        len *= -1;
+        pos -= len;
     }
+    char *ret = (char *)malloc(len * sizeof(char));
+    memcpy(ret, str + pos, len);
     return ret;
 }
 
-// Finds the 1st match of a character in str
-int find(char *str, char character)
-{
-    for (size_t i = 0; i < strlen(str); i++)
-    {
-        if (character == str[i])
-            return i;
-    }
-    return -1;
+// Finds the first match of a character in str
+// Returns -1 if not found
+int findf(const char *str, char c) {
+    char *ret = strchr(str, c);
+    if (ret == NULL) { return -1; }
+    return (ret - str + 1);
+}
+
+// Finds the last match of a character in str
+// Returns -1 if not found
+int findl(const char *str, char c) {
+    char *ret = strrchr(str, c);
+    if (ret == NULL) { return -1; }
+    return (ret - str + 1);
 }
 
 // Replaces a part of str1 with str2
-char *replace(char *str1, int start, int end, char *str2)
-{
-    char *ret = (char*)malloc(strlen(str1) - (end - start) + strlen(str2));
-    for (int i = 0; i < start-1; i++)
-    {
-        ret[i] = str1[i];
-    }
-    strcat(ret, str2);
-    strcat(ret, substr(str1, end, strlen(str1)));
+char *replace(const char *str1, size_t pos, size_t len, const char *str2) {
+    int l1 = strlen(str1), l2 = strlen(str2);
+    char *ret = (char *)malloc(l1 - len + l2);
+    //copies a part of str1 to ret
+    memcpy(ret, str1, pos);
+    //insterts the replacement string
+    memcpy(ret + pos, str2, l2);
+    //copies the rest of str1
+    memcpy(ret + pos + l2, str1 + pos + len, l1 - (pos + len));
     return ret;
 }
 
