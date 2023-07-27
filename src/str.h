@@ -34,7 +34,13 @@ int findl(const char *str, char c) {
 }
 
 // Replaces a part of str1 with str2
-char *replace(const char *str1, size_t pos, size_t len, const char *str2) {
+char *replace(char *str1, size_t pos, ssize_t len, const char *str2) {
+    // assert(pos > 0);
+    if (len == 0) { return str1; }
+    if (len < 0) {
+        len *= -1;
+        pos -= len;
+    }
     int l1 = strlen(str1), l2 = strlen(str2);
     char *ret = (char *)malloc(l1 - len + l2);
     //copies a part of str1 to ret
@@ -43,6 +49,23 @@ char *replace(const char *str1, size_t pos, size_t len, const char *str2) {
     memcpy(ret + pos, str2, l2);
     //copies the rest of str1
     memcpy(ret + pos + l2, str1 + pos + len, l1 - (pos + len));
+    return ret;
+}
+
+// Erases from str starting from pos with length len 
+char *erase(char *str, size_t pos, ssize_t len) {
+    // assert(pos > 0);
+    if (len == 0) { return str; }
+    if (len < 0) {
+        len *= -1;
+        pos -= len;
+    }
+    int slen = strlen(str);
+    char *ret = (char *)malloc(slen - len);
+    //copies a part of str to ret
+    memcpy(ret, str, pos);
+    //copies the rest of str
+    memcpy(ret + pos, str + pos + len, slen - (pos + len));
     return ret;
 }
 

@@ -23,6 +23,10 @@ int main(void) {
     printf("lc: %d\n", findl(str, 't'));
 
     printf("Rep: %s\n", replace(str, 8, 4, "hello"));
+    printf("-Rep: %s\n", replace(str, 12, -4, "hello"));
+
+    printf("Era: %s\n", erase(str, 8, 4));
+    printf("-Era: %s\n", erase(str, 12, -4));
 
     return 0;
 }
