@@ -14,8 +14,8 @@
 #define PORT 8080
 #define MAX_CLIENTS 30
 
-void poll_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size);
-void poll_del(struct pollfd poll_list[ ], int i, int *fd_count);
+void poll_list_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size);
+void poll_list_del(struct pollfd poll_list[ ], int i, int *fd_count);
 // int get_listener(void);
 
 typedef struct {
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
                         }
                     }
 
-                    poll_add(&poll_list, socket, &fd_count, &fd_size);
+                    poll_list_add(&poll_list, socket, &fd_count, &fd_size);
 
                     // printf("pollserver: new connection from %s on " "socket %d\n",
                     //     inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
                         }
 
                         close(poll_list[i].fd);
-                        poll_del(poll_list, i, &fd_count);
+                        poll_list_del(poll_list, i, &fd_count);
                     }
                     else {
                         for (int j = 0; j < fd_count; j++) {
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void poll_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size) {
+void poll_list_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size) {
     // If we don't have room, add more space in the pfds array
     if (*fd_count == *fd_size) {
         *fd_size *= 2; // Double it
@@ -194,7 +194,7 @@ void poll_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_siz
 }
 
 // Remove an index from the set
-void poll_del(struct pollfd poll_list[ ], int i, int *fd_count) {
+void poll_list_del(struct pollfd poll_list[ ], int i, int *fd_count) {
     // Copy the one from the end over this one
     poll_list[i] = poll_list[*fd_count - 1];
 
