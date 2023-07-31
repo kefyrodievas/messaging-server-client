@@ -6,15 +6,22 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#include "str.h"
+#include "../msg.h"
+#include "../Lib/str.h"
 
-#define BUFF_SIZE 4096
 #define PORT 8080
-#define ADDR "127.0.0.1"
 
+int send_all(int fd, char *buf, size_t *len);
 void *receive(void *socket_fd);
 
-int main(int argc, char const *argv[ ]) {
+// struct Message
+// {
+//     uint16_t len;
+//     char name[16];
+//     char data[BUFF_SIZE];
+// };
+
+int main(int argc, char *argv[ ]) {
     char *ip_address;
     if (argc > 1)ip_address = argv[1];
     else ip_address = "127.0.0.1";
@@ -44,19 +51,27 @@ int main(int argc, char const *argv[ ]) {
     int status;
     status = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
     if (status < 0) {
-        // printf("\nConnection Failed \n");
         perror("Connection Failed");
         exit(EXIT_FAILURE);
     }
 
-    char *hello = "Helloo";
+    // struct Message msg;
 
-    int ret = send(socket_fd, hello, strlen(hello), 0);
-    if (ret < 0) {
-        perror("Failed to send");
-    }
+    char name[16];
+    printf("Enter name: ");
+    scanf("%s", name);
 
-    char *buffer = malloc(BUFF_SIZE * sizeof(char));
+    // memset(msg.name, 0, sizeof(msg.name));
+    // memcpy(msg.name, name, sizeof(name));
+
+    // char *hello = "Helloo";
+
+    // int ret = send(socket_fd, hello, strlen(hello), 0);
+    // if (ret < 0) {
+    //     perror("Failed to send");
+    // }
+
+    char buffer[BUFF_SIZE];
 
     pthread_t receive_thread;
     pthread_create(&receive_thread, NULL, receive, (void *)&socket_fd);
@@ -65,10 +80,21 @@ int main(int argc, char const *argv[ ]) {
 
     while (1) {
         // memset(buffer, 0, 4096);
+
         scanf("%s", buffer);
+
+        // memset(msg.data, 0, sizeof(msg.data));
+        // memcpy(msg.name, buffer, sizeof(buffer));
+
+        // msg.len = strlen(msg.name) + strlen(msg.data) +2;
+
+        size_t l = strlen(buffer);
+        char *buff = format_msg(buffer, &l, NAME);
+        size_t msg_len = strlen(buff);
+
         // fgets(buffer, sizeof(buffer), STDIN_FILENO);
         // write(socket_fd, buffer, strlen(buffer));
-        int ret = send(socket_fd, buffer, strlen(buffer), 0);
+        int ret = send_all(socket_fd, buff, &msg_len);
         if (ret < 0) {
             perror("Failed to send");
         }
@@ -80,6 +106,10 @@ int main(int argc, char const *argv[ ]) {
     close(socket_fd);
     return 0;
 }
+
+
+
+
 
 void *receive(void *socket) {
     int socket_fd = *(int *)socket;

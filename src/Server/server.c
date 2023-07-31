@@ -8,13 +8,14 @@
 #include <sys/select.h>
 #include <poll.h>
 
-#include "str.h"
+#include "../msg.h"
+#include "../Lib/str.h"
 
 #define BUFF_SIZE 4096
 #define PORT 8080
 #define MAX_CLIENTS 30
 
-void poll_list_add(struct pollfd *poll_list[ ], int newfd, int *fd_count, int *fd_size);
+void poll_list_add(struct pollfd *poll_list[], int newfd, int *fd_count, int *fd_size);
 void poll_list_del(struct pollfd poll_list[ ], int i, int *fd_count);
 // int get_listener(void);
 
@@ -109,7 +110,8 @@ int main(int argc, char **argv) {
                         continue;
                     }
                     printf("New connection, socket: %d IP: %s\n", socket, inet_ntoa(address.sin_addr));
-                    send(socket, hello, strlen(hello), 0);
+                    int l = sizeof(hello);
+                    send_all(socket, hello, &l);
 
                     for (int i = 0; i < MAX_CLIENTS; i++) {
                         if (client[i].socket == 0) {
@@ -140,7 +142,8 @@ int main(int argc, char **argv) {
                             for (int j = 0; j < fd_count; j++) {
                                 int dest_fd = poll_list[j].fd;
                                 if (dest_fd != listener && dest_fd != sender_fd) {
-                                    if (send(dest_fd, "Disconnected", 13, 0) < 0) {
+                                    if (send_all(dest_fd, "Disconnected", (int*)13) < 0)
+                                    {
                                         perror("Failed to send");
                                     }
                                 }
@@ -163,7 +166,8 @@ int main(int argc, char **argv) {
 
                             // Except the listener and ourselves
                             if (dest_fd != listener && dest_fd != sender_fd) {
-                                if (send(dest_fd, buffer, nbytes, 0) < 0) {
+                                if (send_all(dest_fd, buffer, &nbytes) < 0)
+                                {
                                     perror("Failed to send");
                                 }
                             }

@@ -9,6 +9,6 @@ then
     # export MAKEFLAGS=-j$(nproc)
 fi
 
-make server
-make client
+make Server
+make Client
 cd ..
