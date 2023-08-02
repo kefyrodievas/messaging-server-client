@@ -11,15 +11,7 @@
 
 #define PORT 8080
 
-int send_all(int fd, char *buf, size_t *len);
 void *receive(void *socket_fd);
-
-// struct Message
-// {
-//     uint16_t len;
-//     char name[16];
-//     char data[BUFF_SIZE];
-// };
 
 int main(int argc, char *argv[ ]) {
     char *ip_address;
@@ -55,46 +47,34 @@ int main(int argc, char *argv[ ]) {
         exit(EXIT_FAILURE);
     }
 
-    // struct Message msg;
-
-    char name[16];
+    char *name = malloc(16);
     printf("Enter name: ");
-    scanf("%s", name);
+    readline(stdin, name, 16);
 
-    // memset(msg.name, 0, sizeof(msg.name));
-    // memcpy(msg.name, name, sizeof(name));
-
-    // char *hello = "Helloo";
-
-    // int ret = send(socket_fd, hello, strlen(hello), 0);
-    // if (ret < 0) {
-    //     perror("Failed to send");
-    // }
+    int ret = sendf(socket_fd, name, strlen(name), NAME);
+    if (ret < 0) {
+        perror("Failed to send");
+    }
 
     char buffer[BUFF_SIZE];
 
     pthread_t receive_thread;
     pthread_create(&receive_thread, NULL, receive, (void *)&socket_fd);
 
-    // char buffer[BUFF_SIZE];
-
     while (1) {
-        // memset(buffer, 0, 4096);
+        readline(stdin, buffer, BUFF_SIZE);
 
-        scanf("%s", buffer);
+        if (strcmp(substr(buffer, 0, 4), "NAME") == 0) {
+            name = substr(buffer, 5, strlen(buffer));
 
-        // memset(msg.data, 0, sizeof(msg.data));
-        // memcpy(msg.name, buffer, sizeof(buffer));
+            int ret = sendf(socket_fd, name, strlen(name), NAME);
+            if (ret < 0) {
+                perror("Failed to send");
+            }
+            continue;
+        }
 
-        // msg.len = strlen(msg.name) + strlen(msg.data) +2;
-
-        size_t l = strlen(buffer);
-        char *buff = format_msg(buffer, &l, NAME);
-        size_t msg_len = strlen(buff);
-
-        // fgets(buffer, sizeof(buffer), STDIN_FILENO);
-        // write(socket_fd, buffer, strlen(buffer));
-        int ret = send_all(socket_fd, buff, &msg_len);
+        int ret = sendf(socket_fd, buffer, strlen(buffer), MESSAGE);
         if (ret < 0) {
             perror("Failed to send");
         }
@@ -107,10 +87,6 @@ int main(int argc, char *argv[ ]) {
     return 0;
 }
 
-
-
-
-
 void *receive(void *socket) {
     int socket_fd = *(int *)socket;
     char buffer[BUFF_SIZE];
@@ -121,7 +97,9 @@ void *receive(void *socket) {
 
     while (1) {
         memset(buffer, 0, BUFF_SIZE);
-        int bytesRecv = recv(socket_fd, buffer, BUFF_SIZE, 0);
+        char type;
+        int bytesRecv = recvf(socket_fd, buffer, &type);
+        // int bytesRecv = recv(socket_fd, buffer, BUFF_SIZE, 0);
 
         if (bytesRecv < 0) {
             perror("Connection issue");

@@ -14,6 +14,8 @@
         "socket.h": "c",
         "netdb.h": "c",
         "inet.h": "c",
-        "in.h": "c"
+        "in.h": "c",
+        "compare": "cpp",
+        "cstdint": "cpp"
     }
 }
