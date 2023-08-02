@@ -2,139 +2,48 @@
 #define LIST_H
 
 #include <stdlib.h>
+#include <string.h>
 
-// Defines linked list
-#define define_list(type)\
-    typedef struct                                                                                     \
-    {                                                                                                  \
-        void (*append)(struct element_##type *, type);                                                 \
-        void (*prepend)(struct element_##type **, type);                                               \
-        int (*remove_last)(struct element_##type *);                                                   \
-        int (*remove_first)(struct element_##type **);                                                 \
-        int (*remove_by_index)(struct element_##type, int);                                            \
-    } _list_functions_##type;  \
-                                                                            \
-    typedef struct _element_##type                                                                     \
-    {                            \
-        _list_functions_##type *funcs;                                                                      \
-        type val;                                                                                      \
-        struct _element_##type *next;                                                                          \
-    } element_##type;                                                                                  \
-                                                                            \
-                                                                                                       \
-    element_##type * _create_list_##type()                                                              \
-    {                                                                                                  \
-        element_##type *head = NULL;                                                                   \
-        head = (element_##type *)malloc(sizeof(element_##type));                                       \
-        return head;                                                                                   \
-    }                                                                                                  \
-                                                                                                       \
-    void _append_##type(element_##type *head, type value)                                              \
-    {                                                                                                  \
-        element_##type *current = head;                                                                \
-        if (head == NULL)                                                                              \
-        {                                                                                              \
-            head->val = value;                                                                         \
-            head->next = NULL;                                                                         \
-            return;                                                                                    \
-        }                                                                                              \
-        else                                                                                           \
-        {                                                                                              \
-            while (current->next != NULL)                                                              \
-            {                                                                                          \
-                current = current->next;                                                               \
-            }                                                                                          \
-            current->next = (element_##type *)malloc(sizeof(element_##type));                          \
-            current->next->val = value;                                                                \
-            current->next->next = NULL;                                                                \
-        }                                                                                              \
-    }                                                                                                  \
-                                                                                                       \
-    void _prepend_##type(element_##type **head, type value)                                            \
-    {                                                                                                  \
-        element_##type *current = (element_##type *)malloc(sizeof(element_##type));                    \
-        current->val = value;                                                                          \
-        current->next = *head;                                                                         \
-        *head = current;                                                                               \
-    }                                                                                                  \
-                                                                                                       \
-    int _remove_last_##type(element_##type *head)                                                      \
-    {                                                                                                  \
-        int retval = 0;                                                                                \
-        /* if there is only one item in the list, remove it */                                         \
-        if (head->next == NULL)                                                                        \
-        {                                                                                              \
-            retval = head->val;                                                                        \
-            free(head);                                                                                \
-            return retval;                                                                             \
-        }                                                                                              \
-                                                                                                       \
-        /* get to the second to last node in the list */                                               \
-        element_##type *current = head;                                                                \
-        while (current->next->next != NULL)                                                            \
-        {                                                                                              \
-            current = current->next;                                                                   \
-        }                                                                                              \
-                                                                                                       \
-        /* now current points to the second to last item of the list, so let's remove current->next */ \
-        retval = current->next->val;                                                                   \
-        free(current->next);                                                                           \
-        current->next = NULL;                                                                          \
-        return retval;                                                                                 \
-    }                                                                                                  \
-                                                                                                       \
-    int _remove_by_index_##type(element_##type **head, int n)                                          \
-    {                                                                                                  \
-        int i = 0;                                                                                     \
-        element_##type *current = *head;                                                               \
-        element_##type *temp = NULL;                                                                   \
-        if (n == 0)                                                                                    \
-        {                                                                                              \
-            return _remove_first_##type(head);                                                         \
-        }                                                                                              \
-                                                                                                       \
-        for (i; i < n - 1; i++)                                                                        \
-        {                                                                                              \
-            if (current->next == NULL)                                                                 \
-            {                                                                                          \
-                return -1;                                                                             \
-            }                                                                                          \
-            current = current->next;                                                                   \
-        }                                                                                              \
-        if (current->next == NULL)                                                                     \
-        {                                                                                              \
-            return -1;                                                                                 \
-        }                                                                                              \
-        temp = current->next;                                                                          \
-        current->next = temp->next;                                                                    \
-        free(temp);                                                                                    \
-        return 0;                                                                                      \
-    }                                                                                                  \
-                                                                                                       \
-    int _remove_first_##type(element_##type **head)                                                    \
-    {                                                                                                  \
-        int retval = -1;                                                                               \
-        element_##type *next = NULL;                                                                   \
-                                                                                                       \
-        if (*head == NULL)                                                                             \
-        {                                                                                              \
-            return retval;                                                                             \
-        }                                                                                              \
-                                                                                                       \
-        next = (*head)->next;                                                                          \
-        free(*head);                                                                                   \
-        *head = next;                                                                                  \
-        return 0;                                                                                      \
-    }                                                                                                  \
-    _list_functions_##type _list_func_##type = {                                                       \
-        &_append_##type,                                                                               \
-        &_prepend_##type,                                                                              \
-        &_remove_last_##type,                                                                          \
-        &_remove_first_##type,                                                                         \
-        &_remove_by_index_##type,                                                                      \
-    };\
+struct _vector{
+    int * data;
+    size_t size;
+    size_t length;
+};
 
-#define element(type) element_##type *
-#define create_list(type) _create_list_##type()
+struct _vector new_vector(){
+    struct _vector ret;
+    ret.data = (int *)malloc(10 * sizeof(int));
+    ret.size = 10;
+    ret.length = 0;
+    return ret;
+}
+
+void append(struct _vector *vector, int element){
+    int *new;
+    if(vector->size == 0){
+        *vector = new_vector();
+    }
+    if(vector->length + 1 > vector->size){
+        new = (int*)malloc(vector->size * 2 * sizeof(int));
+        memcpy(new, vector->data, vector->size);
+        free(vector->data);
+        vector->data = new;
+    }
+    vector->data[vector->length] = element;
+}
+
+void prepend(struct _vector *vector, int element){
+    int *new;
+    if(vector->size == 0){
+        vector = new_vector;
+    }
+    if(vector->length + 1 > vector->size){
+        new = (int*)malloc(vector->size * 2 * sizeof(int));
+        memcpy(new + 1, vector->data, vector->size);
+        free(vector->data);
+        vector->data = new;
+    }
+    vector->data[0] = element;
+}
 
 #endif

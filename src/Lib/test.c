@@ -1,11 +1,17 @@
-#include "list.h"
+#include "vector.h"
 #include "str.h"
 #include <stdio.h>
 
-define_list(int);
 
 int main(){
-    element(int) List = create_list(int);
-    append(List, 1);
-    printf("%d", List -> val);
+    struct _vector List = new_vector();
+    for(int i = 0; i < 11; i++){
+        prepend(&List, i);
+        
+    }
+    for(int i = 0; i < 11; i++){
+        printf("%d\n", List.data[i]);
+    }
+    // printf("%d\n", List.data[9]);
+    
 }
