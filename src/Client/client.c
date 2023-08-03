@@ -74,6 +74,16 @@ int main(int argc, char *argv[ ]) {
             continue;
         }
 
+        if (strcmp(substr(buffer, 0, 4), "ROOM") == 0) {
+            name = substr(buffer, 5, strlen(buffer));
+
+            int ret = sendf(socket_fd, name, strlen(name), ROOM);
+            if (ret < 0) {
+                perror("Failed to send");
+            }
+            continue;
+        }
+
         int ret = sendf(socket_fd, buffer, strlen(buffer), MESSAGE);
         if (ret < 0) {
             perror("Failed to send");
@@ -90,10 +100,6 @@ int main(int argc, char *argv[ ]) {
 void *receive(void *socket) {
     int socket_fd = *(int *)socket;
     char buffer[BUFF_SIZE];
-
-    // int bytes;
-    // bytes = read(socket_fd, buffer, sizeof(buffer));
-    // printf("%s\n", buffer);
 
     while (1) {
         memset(buffer, 0, BUFF_SIZE);
