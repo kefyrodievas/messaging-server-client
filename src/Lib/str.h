@@ -69,11 +69,14 @@ char *erase(char *str, size_t pos, ssize_t len) {
     return ret;
 }
 
-int readline(FILE *stream, char *s, int len) {
+int readline(FILE *stream, char *s, size_t len) {
     int c = EOF;
-    int i;
+    size_t i;
     for (i = 0; i < len - 1 && (c = fgetc(stream)) != EOF && c != '\n'; ++i) {
         s[i] = c;
+    }
+    if (c == EOF) {
+        return EOF;
     }
     // if (c == '\n') {
     //     s[i] = c;

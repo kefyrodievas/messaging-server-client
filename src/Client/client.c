@@ -67,7 +67,25 @@ int main(int argc, char *argv[ ]) {
         if (strcmp(substr(buffer, 0, 4), "NAME") == 0) {
             name = substr(buffer, 5, strlen(buffer));
 
+            while (findf(name, ' ') > 0) {
+                name = erase(name, findf(name, ' '), 1);
+            }
+            if (strlen(name) < 1) {
+                printf("Can not change the name\n");
+                continue;
+            }
+
             int ret = sendf(socket_fd, name, strlen(name), NAME);
+            if (ret < 0) {
+                perror("Failed to send");
+            }
+            continue;
+        }
+
+        if (strcmp(substr(buffer, 0, 4), "ROOM") == 0) {
+            name = substr(buffer, 5, strlen(buffer));
+
+            int ret = sendf(socket_fd, name, strlen(name), ROOM);
             if (ret < 0) {
                 perror("Failed to send");
             }
@@ -90,10 +108,6 @@ int main(int argc, char *argv[ ]) {
 void *receive(void *socket) {
     int socket_fd = *(int *)socket;
     char buffer[BUFF_SIZE];
-
-    // int bytes;
-    // bytes = read(socket_fd, buffer, sizeof(buffer));
-    // printf("%s\n", buffer);
 
     while (1) {
         memset(buffer, 0, BUFF_SIZE);
