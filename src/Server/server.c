@@ -188,7 +188,7 @@ int main(int argc, char *argv[ ]) {
                         // When client disconnects
                         if (nbytes == 0) {
                             char *tmp_buff = malloc(BUFF_SIZE);
-                            sprintf(tmp_buff, "%s disconnected\n", client[sender_fd].name);
+                            sprintf(tmp_buff, "%s disconnected", client[sender_fd].name);
 
                             for (int j = 0; j < fd_count; j++) {
                                 int dest_fd = poll_list[j].fd;
@@ -298,8 +298,8 @@ int main(int argc, char *argv[ ]) {
                                 break;
                             }
 
-                            int curr_room = 0;
-                            int new_room = 0;
+                            int curr_room = -1;
+                            int new_room = -1;
 
                             for (int j = 0; j < room_count; j++) {
                                 if (rooms[j].users[sender_fd].socket == sender_fd) {
@@ -308,6 +308,11 @@ int main(int argc, char *argv[ ]) {
                                 if (strcmp(rooms[j].name, buffer) == 0) {
                                     new_room = j;
                                 }
+                            }
+                            if (new_room == -1) {
+                                char *err = "Room does not exist\n";
+                                sendf(sender_fd, err, strlen(err), MESSAGE);
+                                break;
                             }
                             if (curr_room == new_room) {
                                 char *err = "You are already connected to this room\n";
@@ -318,7 +323,7 @@ int main(int argc, char *argv[ ]) {
                             sprintf(tmp_buff, "You connected to room: %s\n", rooms[new_room].name);
                             sendf(sender_fd, tmp_buff, strlen(tmp_buff), MESSAGE);
 
-                            sprintf(tmp_buff, "%s left\n", client[sender_fd].name);
+                            sprintf(tmp_buff, "%s left", client[sender_fd].name);
 
                             for (int j = 0; j < room_count; j++) {
                                 if (rooms[j].users[sender_fd].socket == sender_fd) {
@@ -341,7 +346,7 @@ int main(int argc, char *argv[ ]) {
                             rooms[new_room].users[sender_fd] = client[sender_fd];
                             rooms[curr_room].users[sender_fd] = null_usr;
 
-                            sprintf(tmp_buff, "%s joined\n", client[sender_fd].name);
+                            sprintf(tmp_buff, "%s joined", client[sender_fd].name);
 
                             for (int j = 0; j < room_count; j++) {
                                 if (rooms[j].users[sender_fd].socket == sender_fd) {

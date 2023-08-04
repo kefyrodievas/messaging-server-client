@@ -54,6 +54,7 @@ ssize_t send_all(int fd, char *buf, size_t len) {
 }
 
 ssize_t sendf(int fd, char *buff, size_t len, char type) {
+    if (strlen(buff) < 1) return 0;
     uint16_t msg_len = sizeof(uint16_t) + sizeof(char) + len;
 
     char *tmp_buff = malloc(msg_len);
