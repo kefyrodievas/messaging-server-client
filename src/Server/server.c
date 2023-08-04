@@ -65,12 +65,16 @@ int main(int argc, char *argv[ ]) {
         exit(EXIT_FAILURE);
     }
 
+    user null_usr;
+    null_usr.socket = 0;
+    null_usr.name = NULL;
+    null_usr.address = NULL;
+
     user client[MAX_CLIENTS];
     for (int i = 0; i < MAX_CLIENTS; i++) {
-        client[i].socket = 0;
-        client[i].name = "";
-        client[i].address = "";
+        client[i] = null_usr;
     }
+
 
     // FILE *fptr;
 
@@ -81,16 +85,25 @@ int main(int argc, char *argv[ ]) {
     // fclose(fptr);
 
     FILE *rooms_file;
-    rooms_file = fopen("../rooms.txt", "r");
+    rooms_file = fopen("rooms.txt", "r");
+
+    if (rooms_file == NULL) {
+        printf("Failed to open rooms file\n");
+        exit(0);
+    }
 
     room rooms[20];
     int room_count = 0;
 
     char *room_name = malloc(16);
-    for (room_count = 0; fgets(room_name, 16, rooms_file); room_count++) {
+    for (room_count = 0; readline(rooms_file, room_name, 16) != EOF; room_count++) {
         printf("%s\n", room_name);
         rooms[room_count].name = strdup(room_name);
     }
+    // for (room_count = 0; fgets(room_name, 16, rooms_file); room_count++) {
+    //     printf("%s\n", room_name);
+    //     rooms[room_count].name = strdup(room_name);
+    // }
 
     // int listener = get_listener( );
 
@@ -136,27 +149,22 @@ int main(int argc, char *argv[ ]) {
                     }
                     printf("New connection, socket: %d IP: %s\n", socket, inet_ntoa(address.sin_addr));
 
-
-                    // for (int i = 0; i < MAX_CLIENTS; i++) {
-                    //     if (client[i].socket == 0) {
-                    //         client[i].socket = socket;
-                    //         client[i].address = inet_ntoa(address.sin_addr);
-                    //         break;
-                    //     }
-                    // }
                     client[socket].socket = socket;
                     client[socket].address = inet_ntoa(address.sin_addr);
                     client[socket].name = NULL;
 
                     rooms[0].users[socket] = client[socket];
 
-                    char *hello = "Hello. You are connected to room: ";
-                    size_t msg_len = strlen(rooms[0].name) + strlen(hello);
-                    char *tmp_buff = malloc(msg_len);
-                    memset(tmp_buff, 0, msg_len);
+                    // char *hello = "Hello. You are connected to room: ";
+                    // size_t msg_len = strlen(rooms[0].name) + strlen(hello);
+                    // char *tmp_buff = malloc(msg_len);
+                    // memset(tmp_buff, 0, msg_len);
+                    // strcpy(tmp_buff, hello);
+                    // strcat(tmp_buff, rooms[0].name);
+                    // sendf(socket, tmp_buff, strlen(tmp_buff), MESSAGE);
 
-                    strcpy(tmp_buff, hello);
-                    strcat(tmp_buff, rooms[0].name);
+                    char *tmp_buff = malloc(BUFF_SIZE);
+                    sprintf(tmp_buff, "Hello. You are connected to room: %s\n", rooms[0].name);
 
                     sendf(socket, tmp_buff, strlen(tmp_buff), MESSAGE);
 
@@ -179,17 +187,13 @@ int main(int argc, char *argv[ ]) {
                     if (nbytes <= 0) {
                         // When client disconnects
                         if (nbytes == 0) {
-                            char *disc = " Disconnected";
-                            size_t msg_len = strlen(client[sender_fd].name) + strlen(disc);
-                            char *tmp_buff = malloc(msg_len);
-                            memset(tmp_buff, 0, msg_len);
+                            char *tmp_buff = malloc(BUFF_SIZE);
+                            sprintf(tmp_buff, "%s disconnected\n", client[sender_fd].name);
 
-                            strcpy(tmp_buff, client[sender_fd].name);
-                            strcat(tmp_buff, disc);
                             for (int j = 0; j < fd_count; j++) {
                                 int dest_fd = poll_list[j].fd;
                                 if (dest_fd != listener && dest_fd != sender_fd) {
-                                    if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
+                                    if (sendf(dest_fd, tmp_buff, strlen(tmp_buff), MESSAGE) < 0) {
                                         perror("Failed to send");
                                     }
                                 }
@@ -199,35 +203,48 @@ int main(int argc, char *argv[ ]) {
                             perror("Receive failed");
                         }
 
-                        client[sender_fd].socket = 0;
-                        client[sender_fd].address = NULL;
-                        client[sender_fd].name = NULL;
+                        client[sender_fd] = null_usr;
 
                         close(sender_fd);
                         poll_list_del(poll_list, i, &fd_count);
                     }
                     else {
+                        char *tmp_buff = malloc(BUFF_SIZE + strlen(buffer));
+                        room sender_room;
+
                         switch (type) {
                         case MESSAGE:
-                            size_t msg_len = strlen(client[sender_fd].name) + strlen(buffer) + 2;
-                            char *tmp_buff = malloc(msg_len);
-                            memset(tmp_buff, 0, msg_len);
+                            sprintf(tmp_buff, "%s: %s", client[sender_fd].name, buffer);
 
-                            strcpy(tmp_buff, client[sender_fd].name);
-                            strcat(tmp_buff, ": ");
-                            strcat(tmp_buff, buffer);
+                            for (int j = 0; j < room_count; j++) {
+                                if (rooms[j].users[sender_fd].socket == sender_fd) {
+                                    sender_room = rooms[j];
+                                    break;
+                                }
+                            }
 
-                            for (int j = 0; j < fd_count; j++) {
-                                // Send to everyone!
-                                int dest_fd = poll_list[j].fd;
-
-                                // Except the listener and ourselves
-                                if (dest_fd != listener && dest_fd != sender_fd) {
-                                    if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
-                                        perror("Failed to send");
+                            for (int j = 0; j < MAX_CLIENTS; j++) {
+                                if (sender_room.users[j].socket != 0) {
+                                    int dest_fd = sender_room.users[j].socket;
+                                    if (dest_fd != listener && dest_fd != sender_fd) {
+                                        if (sendf(dest_fd, tmp_buff, strlen(tmp_buff), MESSAGE) < 0) {
+                                            perror("Failed to send");
+                                        }
                                     }
                                 }
                             }
+
+                            // for (int j = 0; j < fd_count; j++) {
+                            //     // Send to everyone!
+                            //     int dest_fd = poll_list[j].fd;
+
+                            //     // Except the listener and ourselves
+                            //     if (dest_fd != listener && dest_fd != sender_fd) {
+                            //         if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
+                            //             perror("Failed to send");
+                            //         }
+                            //     }
+                            // }
                             break;
 
                         case NAME:
@@ -235,23 +252,35 @@ int main(int argc, char *argv[ ]) {
                                 client[sender_fd].name = strdup(buffer);
                             }
                             else {
-                                char *name_msg = " is now known as ";
-                                size_t msg_len = strlen(client[sender_fd].name) + strlen(name_msg) + strlen(buffer);
-                                char *tmp_buff = malloc(msg_len);
-                                memset(tmp_buff, 0, msg_len);
+                                sprintf(tmp_buff, "%s is now known as %s\n", client[sender_fd].name, buffer);
 
-                                strcpy(tmp_buff, client[sender_fd].name);
-                                strcat(tmp_buff, name_msg);
-                                strcat(tmp_buff, buffer);
-                                for (int j = 0; j < fd_count; j++) {
-                                    int dest_fd = poll_list[j].fd;
-                                    // Except the listener and ourselves
-                                    if (dest_fd != listener && dest_fd != sender_fd) {
-                                        if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
-                                            perror("Failed to send");
+                                for (int j = 0; j < room_count; j++) {
+                                    if (rooms[j].users[sender_fd].socket == sender_fd) {
+                                        sender_room = rooms[j];
+                                        break;
+                                    }
+                                }
+
+                                for (int j = 0; j < MAX_CLIENTS; j++) {
+                                    if (sender_room.users[j].socket != 0) {
+                                        int dest_fd = sender_room.users[j].socket;
+                                        if (dest_fd != listener && dest_fd != sender_fd) {
+                                            if (sendf(dest_fd, tmp_buff, strlen(tmp_buff), MESSAGE) < 0) {
+                                                perror("Failed to send");
+                                            }
                                         }
                                     }
                                 }
+
+                                // for (int j = 0; j < fd_count; j++) {
+                                //     int dest_fd = poll_list[j].fd;
+                                //     // Except the listener and ourselves
+                                //     if (dest_fd != listener && dest_fd != sender_fd) {
+                                //         if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
+                                //             perror("Failed to send");
+                                //         }
+                                //     }
+                                // }
                                 client[sender_fd].name = strdup(buffer);
                             }
                             break;
@@ -261,7 +290,7 @@ int main(int argc, char *argv[ ]) {
                             if (strcmp(buffer, "list") == 0) {
                                 char *tmp_buff = malloc(20 * 16);
                                 memset(tmp_buff, 0, 20 * 16);
-                                for (size_t j = 0; j < room_count; j++) {
+                                for (int j = 0; j < room_count; j++) {
                                     strcat(tmp_buff, rooms[j].name);
                                     strcat(tmp_buff, "\n");
                                 }
@@ -269,44 +298,64 @@ int main(int argc, char *argv[ ]) {
                                 break;
                             }
 
-                            int connected = 0;
-                            for (size_t j = 0; j < room_count; j++) {
-                                if (rooms[j].users[sender_fd].socket == sender_fd && strcmp(buffer, rooms[j].name) == 0) {
-                                    char *err = "You are already connected to this room\n";
-                                    sendf(sender_fd, err, strlen(err), MESSAGE);
-                                    connected = 1;
+                            int curr_room = 0;
+                            int new_room = 0;
+
+                            for (int j = 0; j < room_count; j++) {
+                                if (rooms[j].users[sender_fd].socket == sender_fd) {
+                                    curr_room = j;
+                                }
+                                if (strcmp(rooms[j].name, buffer) == 0) {
+                                    new_room = j;
                                 }
                             }
-                            if (connected) { break; }
+                            if (curr_room == new_room) {
+                                char *err = "You are already connected to this room\n";
+                                sendf(sender_fd, err, strlen(err), MESSAGE);
+                                break;
+                            }
 
-                            for (size_t j = 0; j < room_count; j++) {
-                                if (strcmp(rooms[j].name, buffer) == 0) {
-                                    char *change = "You connected to room: ";
-                                    size_t msg_len = strlen(rooms[j].name) + strlen(change);
-                                    char *change_buff = malloc(msg_len);
-                                    memset(change_buff, 0, msg_len);
+                            sprintf(tmp_buff, "You connected to room: %s\n", rooms[new_room].name);
+                            sendf(sender_fd, tmp_buff, strlen(tmp_buff), MESSAGE);
 
-                                    strcpy(change_buff, rooms[j].name);
-                                    strcat(change_buff, change);
-                                    sendf(sender_fd, change_buff, strlen(change_buff), MESSAGE);
+                            sprintf(tmp_buff, "%s left\n", client[sender_fd].name);
 
-                                    rooms[j].users[sender_fd] = client[sender_fd];
+                            for (int j = 0; j < room_count; j++) {
+                                if (rooms[j].users[sender_fd].socket == sender_fd) {
+                                    sender_room = rooms[j];
+                                    break;
+                                }
+                            }
 
-                                    char *new = " joined";
-                                    msg_len = strlen(rooms[j].name) + strlen(new);
-                                    char *tmp_buff = malloc(msg_len);
-                                    memset(tmp_buff, 0, msg_len);
+                            for (int j = 0; j < MAX_CLIENTS; j++) {
+                                if (sender_room.users[j].socket != 0) {
+                                    int dest_fd = sender_room.users[j].socket;
+                                    if (dest_fd != listener && dest_fd != sender_fd) {
+                                        if (sendf(dest_fd, tmp_buff, strlen(tmp_buff), MESSAGE) < 0) {
+                                            perror("Failed to send");
+                                        }
+                                    }
+                                }
+                            }
 
-                                    strcpy(tmp_buff, rooms[j].name);
-                                    strcat(tmp_buff, new);
+                            rooms[new_room].users[sender_fd] = client[sender_fd];
+                            rooms[curr_room].users[sender_fd] = null_usr;
 
-                                    for (int k = 0; k < fd_count; k++) {
-                                        int dest_fd = poll_list[k].fd;
-                                        // Except the listener and ourselves
-                                        if (dest_fd != listener && dest_fd != sender_fd) {
-                                            if (sendf(dest_fd, tmp_buff, msg_len, MESSAGE) < 0) {
-                                                perror("Failed to send");
-                                            }
+                            sprintf(tmp_buff, "%s joined\n", client[sender_fd].name);
+
+                            for (int j = 0; j < room_count; j++) {
+                                if (rooms[j].users[sender_fd].socket == sender_fd) {
+                                    sender_room = rooms[j];
+                                    break;
+                                }
+                            }
+
+                            for (int j = 0; j < MAX_CLIENTS; j++) {
+                                if (sender_room.users[j].socket != 0) {
+                                    int dest_fd = sender_room.users[j].socket;
+                                    if (dest_fd != listener && dest_fd != sender_fd) {
+                                        if (sendf(dest_fd, tmp_buff, strlen(tmp_buff), MESSAGE) < 0) {
+                                            perror("Failed to send");
                                         }
                                     }
                                 }
