@@ -3,10 +3,11 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 // #include <assert.h>
 
 // Gets a portion of a string from pos with length of len
-char *substr(const char *str, size_t pos, ssize_t len) {
+char *substr(const char *str, size_t pos, size_t len) {
     if (len == 0) { return NULL; }
     if (len < 0) {
         len *= -1;
@@ -34,7 +35,7 @@ int findl(const char *str, char c) {
 }
 
 // Replaces a part of str1 with str2
-char *replace(char *str1, size_t pos, ssize_t len, const char *str2) {
+char *replace(char *str1, size_t pos, size_t len, const char *str2) {
     // assert(pos > 0);
     if (len == 0) { return str1; }
     if (len < 0) {
@@ -53,7 +54,7 @@ char *replace(char *str1, size_t pos, ssize_t len, const char *str2) {
 }
 
 // Erases from str starting from pos with length len 
-char *erase(char *str, size_t pos, ssize_t len) {
+char *erase(char *str, size_t pos, size_t len) {
     // assert(pos > 0);
     if (len == 0) { return str; }
     if (len < 0) {

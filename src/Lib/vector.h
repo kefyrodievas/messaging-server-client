@@ -18,35 +18,67 @@ _vector new_vector(){
     return ret;
 }
 
-int append(_vector *vector, int element){
+typedef struct{
+
+} _vector_functions;
+
+int _append(_vector *vector, int element){
     int *new;
     // _vector new_v;
     if(vector->length + 1 > vector->size){
         new = (int*)malloc(vector->size * 2 * sizeof(int));
         memcpy(new, vector->data, vector->size * sizeof(int));
+
         free(vector->data);
         vector->data = new;
+        vector->size *= 2;
     }
     vector->data[vector->length] = element;
     vector->length++;
+    
 }
 
-void prepend(struct _vector *vector, int element){
-    int *new;
-    // if(vector->size == 0){
-    //     vector = new_vector();
-    // }
-    if(vector->length + 1 > vector->size){
-        new = (int*)malloc(vector->size * 2 * sizeof(int));
-        memcpy(new + 1, vector->data, vector->size * sizeof(int));
-        free(vector->data);
-        vector->data = new;
-    }
-    new = (int*)malloc(vector->size * 2 * sizeof(int));
-    memcpy(new + 1, vector->data, vector->size * sizeof(int));
-    vector->size *=2;
+void _prepend(struct _vector *vector, int element){
+    vector->size = vector->length + 1 > vector->size ? vector->size *=2 : vector->size;
+    // if(vector->length + 1 > vector->size){
+    //     // new = (int*)malloc(vector->size * 2 * sizeof(int));
+    //     vector->size *=2;
+    // // }
+    int *new = (int*)malloc(vector->size * sizeof(int));
+
+    // // int * new;
+    // // new + 1 = vector->data;
+    
+    memcpy(new + 1, vector->data, vector->length * sizeof(int));
+    // int * new = vector->data;
+    // int s = sizeof(int);
+    // *(int*)new <<= 7;
     new[0] = element;
-    memcpy(vector->data, new, vector->size * sizeof(int));
+    free(vector->data);
+    vector->data = new;
+    vector->length++;
+}
+
+void _remove(struct _vector *vector, int pos){
+    int * new = malloc(vector->size * sizeof(int));
+    int * data = (*vector).data;
+    memcpy(new, data, (pos - 1) * sizeof(int));
+    memcpy(new + pos - 1, data + pos, (vector->size - pos + 1) * sizeof(int));
+    free(data);
+    // free(vector->data);
+    vector->data = new;
+    vector->length -= 1;
+}
+
+void _destroy(struct _vector *vector){
+    free(vector->data);
+    vector->length = NULL;
+    vector->size = NULL;
+}
+
+void _reset(struct _vector *vector){
+    free(vector->data);
+    *vector = new_vector();
 }
 
 #endif

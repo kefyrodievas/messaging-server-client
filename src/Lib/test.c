@@ -2,16 +2,29 @@
 #include "str.h"
 #include <stdio.h>
 
-
-int main(){
+int main()
+{
     struct _vector List = new_vector();
-    for(int i = 0; i < 11; i++){
-        prepend(&List, i);
-        
+    printf("prepend:\n");
+    for (int i = 0; i < 160; i++){
+        _prepend(&List, i);
     }
-    for(int i = 0; i < 11; i++){
-        printf("%d\n", List.data[i]);
+    // _remove(&List, 3);
+    // _remove(&List, 4);
+    for (int i = 0; i < List.length; i++){
+
+        printf("%d ", List.data[i]);
+        printf((i + 1) % 5 ? "" : "\n");
     }
-    // printf("%d\n", List.data[9]);
-    
+    printf("\nappend:\n");
+    _reset(&List);
+    for (int i = 0; i < 160; i++){
+        _append(&List, i);
+    }
+    for (int i = 0; i < List.length; i++){
+
+        printf("%d ", List.data[i]);
+        printf((i + 1) % 5 ? "" : "\n");
+    }
+    _destroy(&List);
 }
