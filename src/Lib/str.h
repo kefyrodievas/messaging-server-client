@@ -7,13 +7,17 @@
 // #include <assert.h>
 
 // Gets a portion of a string from pos with length of len
-char *substr(const char *str, size_t pos, size_t len) {
+char *substr(const char *str, size_t pos, ssize_t len) {
     if (len == 0) { return NULL; }
     if (len < 0) {
         len *= -1;
         pos -= len;
     }
-    char *ret = (char *)malloc(len * sizeof(char));
+    // if (strlen(str + pos) < len) {
+    //     return str + pos;
+    // }
+    char *ret = malloc(((size_t)len + 1) * sizeof(char));
+    memset(ret, 0, len + 1);
     memcpy(ret, str + pos, len);
     return ret;
 }
@@ -22,20 +26,30 @@ char *substr(const char *str, size_t pos, size_t len) {
 // Returns -1 if not found
 int findf(const char *str, char c) {
     char *ret = strchr(str, c);
-    if (ret == NULL) { return -1; }
-    return (ret - str + 1);
+    if (ret == NULL) {
+        free(ret);
+        return -1;
+    }
+    int pos = ret - str + 1;
+    free(ret);
+    return pos;
 }
 
 // Finds the last match of a character in str
 // Returns -1 if not found
 int findl(const char *str, char c) {
     char *ret = strrchr(str, c);
-    if (ret == NULL) { return -1; }
-    return (ret - str + 1);
+    if (ret == NULL) {
+        free(ret);
+        return -1;
+    }
+    int pos = ret - str + 1;
+    free(ret);
+    return pos;
 }
 
 // Replaces a part of str1 with str2
-char *replace(char *str1, size_t pos, size_t len, const char *str2) {
+char *replace(char *str1, size_t pos, ssize_t len, const char *str2) {
     // assert(pos > 0);
     if (len == 0) { return str1; }
     if (len < 0) {
@@ -54,7 +68,7 @@ char *replace(char *str1, size_t pos, size_t len, const char *str2) {
 }
 
 // Erases from str starting from pos with length len 
-char *erase(char *str, size_t pos, size_t len) {
+char *erase(char *str, size_t pos, ssize_t len) {
     // assert(pos > 0);
     if (len == 0) { return str; }
     if (len < 0) {

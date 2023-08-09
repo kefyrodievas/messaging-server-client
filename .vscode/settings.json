@@ -16,6 +16,7 @@
         "inet.h": "c",
         "in.h": "c",
         "compare": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "typeinfo": "c"
     }
 }

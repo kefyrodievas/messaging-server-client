@@ -47,25 +47,30 @@ int main(int argc, char *argv[ ]) {
         exit(EXIT_FAILURE);
     }
 
-    char *name = malloc(16);
-    printf("Enter name: ");
-    readline(stdin, name, 16);
 
-    int ret = sendf(socket_fd, name, strlen(name), NAME);
+    char uname[16];
+    printf("Enter name: ");
+    readline(stdin, uname, 16);
+
+    int ret = sendf(socket_fd, uname, strlen(uname), NAME);
     if (ret < 0) {
         perror("Failed to send");
     }
 
     char buffer[BUFF_SIZE];
+    char *cmd;
 
     pthread_t receive_thread;
     pthread_create(&receive_thread, NULL, receive, (void *)&socket_fd);
 
-    while (1) {
+    int loop = 1;
+    while (loop) {
         readline(stdin, buffer, BUFF_SIZE);
 
-        if (strcmp(substr(buffer, 0, 4), "NAME") == 0) {
-            name = substr(buffer, 5, strlen(buffer));
+        cmd = substr(buffer, 0, 4);
+
+        if (strcmp(cmd, "NAME") == 0) {
+            char *name = substr(buffer, 5, strlen(buffer));
 
             while (findf(name, ' ') > 0) {
                 name = erase(name, findf(name, ' '), 1);
@@ -79,17 +84,23 @@ int main(int argc, char *argv[ ]) {
             if (ret < 0) {
                 perror("Failed to send");
             }
+            free(name);
             continue;
         }
 
-        if (strcmp(substr(buffer, 0, 4), "ROOM") == 0) {
-            name = substr(buffer, 5, strlen(buffer));
+        if (strcmp(cmd, "ROOM") == 0) {
+            char *room = substr(buffer, 5, strlen(buffer));
 
-            int ret = sendf(socket_fd, name, strlen(name), ROOM);
+            int ret = sendf(socket_fd, room, strlen(room), ROOM);
             if (ret < 0) {
                 perror("Failed to send");
             }
+            free(room);
             continue;
+        }
+
+        if (strcmp(cmd, "EXIT") == 0) {
+            break;
         }
 
         int ret = sendf(socket_fd, buffer, strlen(buffer), MESSAGE);
@@ -97,7 +108,9 @@ int main(int argc, char *argv[ ]) {
             perror("Failed to send");
         }
     }
+    free(cmd);
 
+    pthread_cancel(receive_thread);
     pthread_join(receive_thread, NULL);
 
     // Close the connected socket
