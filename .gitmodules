@@ -1,0 +1,3 @@
+[submodule "src/Lib/c-lib"]
+	path = src/Lib/c-lib
+	url = https://github.com/kefyrodievas/c-lib
