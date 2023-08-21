@@ -26,6 +26,7 @@ typedef struct {
 
 typedef struct {
     char *name;
+    int client_count;
     client clients[MAX_CLIENTS];
 } room;
 
@@ -93,6 +94,7 @@ int main(int argc, char *argv[ ]) {
     for (room_count = 0; readline(rooms_file, room_name, 16) != EOF; room_count++) {
         printf("%s\n", room_name);
         rooms[room_count].name = strdup(room_name);
+        rooms[room_count].client_count = 0;
         for (int i = 0; i < MAX_CLIENTS; i++) {
             rooms[room_count].clients[i] = null_usr;
         }
@@ -115,7 +117,7 @@ int main(int argc, char *argv[ ]) {
     poll_list_add(&poll_list, listener, &fd_count, &fd_size);
 
     while (1) {
-        int events = poll(poll_list, fd_count, -1);
+        int events = poll(poll_list, fd_count, 30 * 1000);
 
         if (events < 0) {
             perror("Poll failed");
@@ -124,6 +126,7 @@ int main(int argc, char *argv[ ]) {
 
         if (events == 0) {
             printf("Poll timed out!\n");
+            break;
         }
 
         for (int i = 0; i < fd_count; i++) {
@@ -146,6 +149,7 @@ int main(int argc, char *argv[ ]) {
                     clients[socket].name = NULL;
 
                     rooms[0].clients[socket] = clients[socket];
+                    rooms[0].client_count++;
 
                     char *tmp_buff = malloc(BUFF_SIZE);
                     sprintf(tmp_buff, "Hello. You are connected to room: %s\n", rooms[0].name);
@@ -185,6 +189,14 @@ int main(int argc, char *argv[ ]) {
                         }
 
                         clients[sender_fd] = null_usr;
+
+                        for (int j = 0; j < room_count; j++) {
+                            if (rooms[j].clients[sender_fd].socket == sender_fd) {
+                                rooms[j].clients[sender_fd] = null_usr;
+                                rooms[j].client_count--;
+                                break;
+                            }
+                        }
 
                         close(sender_fd);
                         poll_list_del(poll_list, i, &fd_count);
@@ -279,6 +291,19 @@ int main(int argc, char *argv[ ]) {
             }
         }
     }
+
+    for (int i = 0; i < room_count; i++) {
+        free(rooms[i].name);
+        for (int j = 0; j < rooms[i].client_count; j++) {
+            free(rooms[i].clients[j].name);
+            free(rooms[i].clients[j].address);
+        }
+    }
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        free(clients[i].address);
+        free(clients[i].name);
+    }
+
     free(poll_list);
 
     // closing the listening socket
