@@ -1,0 +1,12 @@
+---
+BasedOnStyle: Google
+AlignOperands: true
+ColumnLimit: 120
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+NamespaceIndentation: Inner
+PointerAlignment: Right
+SortIncludes: false
+
+...

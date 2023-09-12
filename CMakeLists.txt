@@ -11,10 +11,10 @@ set(CMAKE_C_FLAGS "-O2 -Wall -Wextra")
 # file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 # add_executable(${PROJECT_NAME} ${SOURCES})
 
-file(GLOB_RECURSE SERVER ${PROJECT_SOURCE_DIR}/src/Server/server.c)
+file(GLOB_RECURSE SERVER ${PROJECT_SOURCE_DIR}/src/Server/*.c)
 add_executable(Server ${SERVER})
 
-file(GLOB_RECURSE CLIENT ${PROJECT_SOURCE_DIR}/src/Client/client.c)
+file(GLOB_RECURSE CLIENT ${PROJECT_SOURCE_DIR}/src/Client/*.c)
 add_executable(Client ${CLIENT})
 
 # add_custom_target( server )

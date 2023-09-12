@@ -18,5 +18,6 @@
         "compare": "cpp",
         "cstdint": "cpp",
         "typeinfo": "c"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/clang"
 }
